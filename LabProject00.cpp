@@ -1,9 +1,11 @@
 ﻿// LabProject00.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 
-#include "stdafx.h"
-#include "LabProject00.h"
 
+#include "LabProject00.h"
+#include"CGameFramework.h"
+
+CGameFramework gGameFramework;
 #define MAX_LOADSTRING 100
 
 // 전역 변수:
@@ -47,18 +49,36 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //다. GetMessage() API 함수가 FALSE를 반환하는 경우는 메시지 큐에서 가져온 메시지가 WM_QUIT 메시지일 때이다.WM_QUIT 메시지는 응용 프로그램을 종료하는 경우에 발생한다.다른 메시지의 경우에는
     //TRUE를 반환한다.그러므로 다음의 메시지 루프는 WM_QUIT 메시지를 처리할 때까지 계속
     //반복하여 실행될 것이다.
-    while (GetMessage(&msg, nullptr, 0, 0))
+    while (1)
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            if (msg.message == WM_QUIT)break;
+            if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+        else
+        {
+            gGameFramework.FrameAdvance();
         }
     }
 
-    return (int) msg.wParam;
+    gGameFramework.OnDestroy();
 }
-
+/*응용 프로그램 마법사가 생성한 코드의 메시지 루프는 응용 프로그램이 처리해야 할 윈도우 메시지가 메
+시지 큐에 있으면 꺼내와서 처리를 하고 메시지가 없으면 CPU를 운영체제로 반납하도록 되어있다
+(GetMessage() API 함수).그러나 게임 프로그램은 프로그램이 처리할 메시지가 없더라도 화면 렌더링, 사용자 입력처리, 길찾기 등의 작업이 계속 진행되어야 한다.그러므로 만약 처리할 메시지가 없더라도
+CPU를 반납하지 않고 게임이 계속 진행되도록 해야 한다.이를 위해서 윈도우 메시지 루프를
+PeekMessage() API 함수를 사용하여 변경한다.PeekMessage() API 함수는 메시지 큐를 살펴보고 메시
+지가 있으면 메시지를 꺼내고 TRUE를 반환한다.만약 메시지 큐에 메시지가 없으면 FALSE를 반환한다.그러므로 PeekMessage() 함수가 TRUE를 반환하는 경우(응용 프로그램이 처리해야 할 윈도우 메시지가
+    메시지 큐에 있으면) 정상적인 윈도우 메시지 처리 과정을 수행해야 한다.그러나 FALSE를 반환하는 경
+    우(메시지 큐가 비어있으면) gGameFramework.FrameAdvance() 함수를 호출하여 게임 프로그램이 CPU
+    를 사용할 수 있도록 해야 한다.그리고 이 과정은 사용자가 프로그램을 종료할 때까지 계속 반복되도록
+    한다.그리고 메시지 루프가 종료되면 gGameFramework.OnDestroy() 함수를 호출하여 프레임워크 객체를 소
+멸하도록 한다.*/
 
 
 //
@@ -80,7 +100,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LABPROJECT00));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_LABPROJECT00);
+    //wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_LABPROJECT00);
+    wcex.lpszMenuName = NULL;//->주 윈도우의 메뉴가 나타나지 않도록 한다.
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
    //wcex.lpszMenuName=NULL
@@ -102,22 +123,25 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)//주 윈도우를 생성하
    //hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU |
        WS_BORDER;
-   RECT rc = { 0, 0, 640, 480 };
+   RECT rc = { 0, 0, FRAME_BUFFER_WIDTH,FRAME_BUFFER_HEIGHT};
    AdjustWindowRect(&rc, dwStyle, FALSE);
-   HWND hWnd = CreateWindow(szWindowClass, szTitle, dwStyle, CW_USEDEFAULT,
+   HWND hMainWnd = CreateWindow(szWindowClass, szTitle, dwStyle, CW_USEDEFAULT,
        CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInstance,
        NULL);//윈도우를 생성하는 윈도우 API Creat Window
 
-   if (!hWnd)
+   if (!hMainWnd)
    {
       return FALSE;
    }
+   gGameFramework.onCreate(hInstance, hMainWnd);
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+   ShowWindow(hMainWnd, nCmdShow);
+   UpdateWindow(hMainWnd);
 
    return TRUE;
 }
+//프로그램의 주 윈도우가 생성되면 CGameFramework 클래스의 OnCreate() 함수를 호출하여 프레임워크 
+//객체를 초기화하도록 한다
 
 //
 //  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -133,36 +157,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 {
     switch (message)
     {
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // 메뉴 선택을 구문 분석합니다:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-        break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            EndPaint(hWnd, &ps);
-        }
+    case WM_SIZE:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_MOUSEMOVE:
+    case WM_KEYDOWN:
+    case WM_KEYUP:
+        gGameFramework.OnProcessingWindowMessage(hWnd, message, wParam, lParam);
         break;
     case WM_DESTROY:
-        PostQuitMessage(0);
+        ::PostQuitMessage(0);
         break;
     default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        return(::DefWindowProc(hWnd, message, wParam, lParam));
     }
     return 0;
 }
