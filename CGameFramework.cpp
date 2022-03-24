@@ -30,6 +30,8 @@ CGameFramework::CGameFramework()
 
 	m_nWndClientWidth = FRAME_BUFFER_WIDTH;
 	m_nWndClientHeight = FRAME_BUFFER_HEIGHT;
+	
+	_tcscpy_s(m_pszFrameRate, _T("LapProject("));
 
 }
 
@@ -422,6 +424,9 @@ void CGameFramework::WaitForGpuComplete()
 
 void CGameFramework::FrameAdvance()
 {
+	//타이머의 시간이 갱신되도록 하고 프레임 레이트를 계산한다.
+	m_GameTimer.Tick(0.0f);
+
 	ProcessInput();
 
 	AnimateObjects();
@@ -491,8 +496,12 @@ void CGameFramework::FrameAdvance()
 	dxgiPresentParameters.pDirtyRects = NULL;//제공된 프레임의 백 버퍼에서 업데이트하는 업데이트된 사각형 목록입니다.
 	dxgiPresentParameters.pScrollRect = NULL;// 스크롤된 사각형에 대한 포인터입니다
 	dxgiPresentParameters.pScrollOffset = NULL;//원본 사각형(이전 프레임)에서 대상 사각형(현재 프레임)으로 이동하는 스크롤된 영역의 오프셋에 대한 포인터입니다. 
+	//m_pdxgiSwapChain->Present(0, 0);
 	m_pdxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);//디스플레이 화면에 프레임을 표시합니다.
 	/*스왑체인을 프리젠트한다. 프리젠트를 하면 현재 렌더 타겟(후면버퍼)의 내용이 전면버퍼로 옮겨지고 렌더 타겟 인
 덱스가 바뀔 것이다.*/
+
 	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();//->스왑 체인의 현재 백 버퍼의 인덱스를 가져와서 인덱스에 저장
+	m_GameTimer.GetFrameRate(m_pszFrameRate + 12, 37);
+	::SetWindowText(m_hwnd, m_pszFrameRate);
 }
