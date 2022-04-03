@@ -1,6 +1,7 @@
 #pragma once
 #include"stdafx.h"
 #include"Timer.h"
+#include"Scene.h"
 class CGameFramework
 {
 
@@ -48,9 +49,11 @@ private:
 	//그래픽스 파이프라인 상태 객체에 대한 인터페이스 포인터이다.
 
 	ID3D12Fence* m_pd3dFence; //이때 필요한 것이 바로 울타리(Fence)이다.울타리(펜스)는 ID3D12Fence 인터페이스로 대표되며, GPU와 CPU의 동기화를 위한 수단으로 쓰인다.다음은 펜스 객체를 생성하는 메서드이다
-	UINT64 m_nFenceValue;
+	UINT64 m_nFenceValues[m_nSwapChainBuffers];
 	HANDLE m_hFenceEvent;
 	//펜스 인터페이스 포인터,펜스의 값,이벤트 핸들이다.
+
+	CScene *m_pScene;
 
 	D3D12_VIEWPORT m_d3dviewport;
 	D3D12_RECT m_d3dScissorRect;
@@ -69,6 +72,8 @@ public:
 	//프레임워크를  초기화하는 함수이다(주 윈도우가 생성되면 호출된다.)
 	void OnDestroy();
 	//프레임워크 파괴
+
+	void ChangeSwapChainState();
 
 	void CreateSwapChain();//스왑체인
 	void CreateRtvAndDsvDescriptorHeaps();//서술자 힙
@@ -99,7 +104,10 @@ public:
 	LRESULT OnProcessingWindowMessage(HWND hWnd, UINT nMessageID, WPARAM wParam,
 		LPARAM lParam);//LRESULT CALLBACK OnProcessingWindowMessage->CALLBACK이 안되는 이유를 모르겠음
 
+
 	//윈도우의 메시지(키보드, 마우스 입력)를 처리하는 함수이다.
+
+	void MoveToNextFrame();
 };
 
 

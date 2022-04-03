@@ -138,6 +138,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)//주 윈도우를 생성하
    ShowWindow(hMainWnd, nCmdShow);
    UpdateWindow(hMainWnd);
 
+#ifdef _WITH_SWAPCHAIN_FULLSCREEN_STATE
+   gGameFramework.ChangeSwapChainState();
+#endif
    return TRUE;
 }
 //프로그램의 주 윈도우가 생성되면 CGameFramework 클래스의 OnCreate() 함수를 호출하여 프레임워크 

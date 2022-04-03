@@ -26,12 +26,13 @@ CGameFramework::CGameFramework()
 
 	m_hFenceEvent = NULL;
 	m_pd3dFence = NULL;
-	m_nFenceValue = 0;
+	for (int i = 0; i < m_nSwapChainBuffers; i++) m_nFenceValues[i] = 0;
+	m_pScene = NULL;
 
 	m_nWndClientWidth = FRAME_BUFFER_WIDTH;
 	m_nWndClientHeight = FRAME_BUFFER_HEIGHT;
 	
-	_tcscpy_s(m_pszFrameRate, _T("LapProject("));
+	_tcscpy_s(m_pszFrameRate, _T("LapProject ("));
 
 }
 
@@ -95,6 +96,37 @@ void CGameFramework::OnDestroy()
 #endif
 }
 
+void CGameFramework::ChangeSwapChainState()
+{
+	WaitForGpuComplete();
+	BOOL bFullScreenState = FALSE;
+	m_pdxgiSwapChain->GetFullscreenState(&bFullScreenState, NULL);//전체 화면 모드와 연결된 상태를 가져옵니다.스왑 체인이 전체 화면 모드에 있는 경우 TRUE스왑 체인이 창 모드에 있는 경우 FALSE
+	m_pdxgiSwapChain->SetFullscreenState(!bFullScreenState, NULL);//디스플레이 상태를 창 또는 전체 화면으로 설정합니다.디스플레이 상태를 창또는 전체 화면으로 설정할지 여부를 지정하는 Boolean 값입니다. 전체 화면의 경우 TRUE, 창에 대한 FALSE.
+
+	DXGI_MODE_DESC dxgiTargetParameters;//디스플레이 모드를 설명합니다.
+	dxgiTargetParameters.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//->화면 초기화
+	dxgiTargetParameters.Width = m_nWndClientWidth;
+	dxgiTargetParameters.Height = m_nWndClientHeight;
+	dxgiTargetParameters.RefreshRate.Numerator = 60;//->초기화 레이트
+	dxgiTargetParameters.RefreshRate.Denominator = 1;
+	dxgiTargetParameters.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	dxgiTargetParameters.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	m_pdxgiSwapChain->ResizeTarget(&dxgiTargetParameters);
+	//후면 버퍼 초기화
+	for (int i = 0; i < m_nSwapChainBuffers; i++)if (m_ppd3dRenderTargetBuffers[i])
+		m_ppd3dRenderTargetBuffers[i]->Release();
+	//->스왑체인을 다시 만든다.
+	DXGI_SWAP_CHAIN_DESC  dxgiSwapChainDesc; //스왑 체인을 설명합니다.
+	m_pdxgiSwapChain->GetDesc(&dxgiSwapChainDesc);
+	m_pdxgiSwapChain->ResizeBuffers(m_nSwapChainBuffers, m_nWndClientWidth,
+		m_nWndClientHeight, dxgiSwapChainDesc.BufferDesc.Format, dxgiSwapChainDesc.Flags);
+
+	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();
+
+	CreateRenderTargetViews();
+
+}
+
 void CGameFramework::CreateSwapChain()
 {
 	RECT rcClient;
@@ -135,7 +167,34 @@ void CGameFramework::CreateSwapChain()
 	//ALT+ENTER 키의 동작을 비활성화 한다.
 
 	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();//->가장 중요할듯??
+
+
 	//스왑체인의 현재 후면버퍼 인덱스를 저장한다.
+	//DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
+	//::ZeroMemory(&dxgiSwapChainDesc, sizeof(dxgiSwapChainDesc));
+	//dxgiSwapChainDesc.BufferCount = m_nSwapChainBuffers;
+	//dxgiSwapChainDesc.BufferDesc.Width = m_nWndClientHeight;
+	//dxgiSwapChainDesc.BufferDesc.Height = m_nWndClientHeight;
+	//dxgiSwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	//dxgiSwapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+	//dxgiSwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	//dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	//dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	//dxgiSwapChainDesc.OutputWindow = m_hwnd;
+	//dxgiSwapChainDesc.SampleDesc.Count = (m_bMsaa4xEnable) ? 4 : 1;
+	//dxgiSwapChainDesc.SampleDesc.Quality = (m_bMsaa4xEnable) ? (m_nMsaa4xQualityLevels -
+	//	1) : 0;
+	//dxgiSwapChainDesc.Windowed = TRUE;
+	////전체화면 모드에서 바탕화면의 해상도를 스왑체인(후면버퍼)의 크기에 맞게 변경한다
+	//dxgiSwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+//	HRESULT hResult = m_pdxgiFactory->CreateSwapChain(m_pd3dCommandQueue,
+//		&dxgiSwapChainDesc, (IDXGISwapChain**)&m_pdxgiSwapChain);
+//	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();
+//	hResult = m_pdxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
+//#ifndef _WITH_SWAPCHAIN_FULLSCREEN_STATE
+//	CreateRenderTargetViews();
+//#endif
 
 }
 
@@ -193,7 +252,7 @@ void CGameFramework::CreateDirect3DDevice()
 	//다중 샘플의 품질 수준이 1보다 크면 다중 샘플링을 활성화한다. 
 		
 	hResult = m_pd3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&m_pd3dFence);
-	m_nFenceValue = 0;
+	for (int i = 0; i < m_nSwapChainBuffers; i++) m_nFenceValues[i] = 0;
 	//펜스를 생성하고 펜스 값을 0으로 설정한다.
 
 	m_hFenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -322,10 +381,16 @@ void CGameFramework::CreateDepthStencilView()//깊이 스텐실 뷰를 만든다.
 
 void CGameFramework::BuildObjects()
 {
+	m_pScene = new CScene();
+	if (m_pScene) m_pScene->BuildObjects(m_pd3dDevice);
+
+	m_GameTimer.Reset();
 }
 
 void CGameFramework::ReleaseObjects()
 {
+	if (m_pScene) m_pScene->ReleaseObjects();
+	if (m_pScene) delete m_pScene;
 }
 
 
@@ -363,6 +428,7 @@ void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPA
 		case VK_F8:
 			break;
 		case VK_F9:
+			ChangeSwapChainState();
 			break;
 		default:
 			break;
@@ -399,109 +465,114 @@ LRESULT CGameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMessageID, WP
 	}	
 	return(0);
 }
+
 void CGameFramework::ProcessInput()
 {
 }
 
 void CGameFramework::AnimateObjects()
 {
+	if (m_pScene) m_pScene->AnimateObjects(m_GameTimer.GetTImeElapsed());
 }
 
 void CGameFramework::WaitForGpuComplete()
 {
-	m_nFenceValue++;
+	UINT64 nFenceValue = ++m_nFenceValues[m_nSwapChainBufferIndex];
 	//CPU펜스의 값을 증가한다.
-	const UINT64 nFence = m_nFenceValue;
-	HRESULT hResult = m_pd3dCommandQueue->Signal(m_pd3dFence, nFence);
+	HRESULT hResult = m_pd3dCommandQueue->Signal(m_pd3dFence, nFenceValue);
 	//GPU가 펜스의 값을 설정하는 명령을 명령 큐에 추가한다.
-	if (m_pd3dFence->GetCompletedValue() < nFence)
+	if (m_pd3dFence->GetCompletedValue() < nFenceValue)
 	{
 	//펜스의 현재 값이 설정한 값보다 작으면 펜스의 현재 값이 설정한 값이 될 때까지 기다린다.
-		hResult = m_pd3dFence->SetEventOnCompletion(nFence, m_hFenceEvent);
+		hResult = m_pd3dFence->SetEventOnCompletion(nFenceValue, m_hFenceEvent);
+		::WaitForSingleObject(m_hFenceEvent, INFINITE);
+	}
+}
+void CGameFramework::MoveToNextFrame()
+{
+	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();
+	UINT64 nFenceValue = ++m_nFenceValues[m_nSwapChainBufferIndex];
+	HRESULT hResult = m_pd3dCommandQueue->Signal(m_pd3dFence, nFenceValue);
+	if (m_pd3dFence->GetCompletedValue() < nFenceValue)
+	{
+		hResult = m_pd3dFence->SetEventOnCompletion(nFenceValue, m_hFenceEvent);
 		::WaitForSingleObject(m_hFenceEvent, INFINITE);
 	}
 }
 
 void CGameFramework::FrameAdvance()
 {
-	//타이머의 시간이 갱신되도록 하고 프레임 레이트를 계산한다.
 	m_GameTimer.Tick(0.0f);
-
 	ProcessInput();
-
 	AnimateObjects();
-
 	HRESULT hResult = m_pd3dCommandAllocator->Reset();
 	hResult = m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
-
 	//명령 할당자와 명령 리스트를 리셋한다.
-
-	D3D12_RESOURCE_BARRIER d3dResourceBarrier;//자원 장벽(자원 사용의 전환)을 설명합니다.
-	::ZeroMemory(&d3dResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
-	d3dResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;//다른 용도 간의 하위 리소스 집합의 전환을 나타내는 전환 장벽입니다. 호출자는 하위 리소스의 사용 전후를 지정해야 합니다.
-	d3dResourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;//"시작 전용" 또는 "종료 전용"과 같은 D3D12_RESOURCE_BARRIER_FLAGS 열거 상수를 지정합니다 .
-	d3dResourceBarrier.Transition.pResource = 
-		m_ppd3dRenderTargetBuffers[m_nSwapChainBufferIndex];//전환에 사용된 리소스를 나타내는 ID3D12Resource 개체에 대한 포인터 입니다.
-	d3dResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-	d3dResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	d3dResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;//전환에 대한 하위 리소스의 인덱스입니다.,리소스의 모든 하위 리소스를 동시에 전환합니다.
-	m_pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);// 리소스에 대한 다중 액세스를 동기화해야 함을 드라이버에 알립니다.
 
 	m_pd3dCommandList->RSSetViewports(1, &m_d3dviewport);
 	m_pd3dCommandList->RSSetScissorRects(1, &m_d3dScissorRect);
-	//뷰포트와 씨저 사각형을 설정한다.
+
+
+	D3D12_RESOURCE_BARRIER d3dResourceBarrier;
+	::ZeroMemory(&d3dResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
+	d3dResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	d3dResourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	d3dResourceBarrier.Transition.pResource =
+		m_ppd3dRenderTargetBuffers[m_nSwapChainBufferIndex];
+	d3dResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	d3dResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	d3dResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	m_pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);
+	/*현재 렌더 타겟에 대한 프리젠트가 끝나기를 기다린다. 프리젠트가 끝나면 렌더 타겟 버퍼의 상태는 프리젠트 상태
+	(D3D12_RESOURCE_STATE_PRESENT)에서 렌더 타겟 상태(D3D12_RESOURCE_STATE_RENDER_TARGET)로 바
+	뀔 것이다.*/
 
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dRtvCPUDescriptorHandle =
-		m_pd3dRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();// 힙의 시작을 나타내는 CPU 설명자 핸들을 가져옵니다.
-	d3dRtvCPUDescriptorHandle.ptr += (m_nSwapChainBufferIndex * m_nRtvDescriptorIncrementSize);//체인 버퍼 인덱스* 렌더 타겟 증가 사이즈
-
-	//현재의 렌더 타겟에 해당하는 서술자의 CPU주소(핸들)를 계산한다.
-	
-	float pfClearColor[4] = { 0.0f,0.125f,0.3f,1.0f };
-	m_pd3dCommandList->ClearRenderTargetView(d3dRtvCPUDescriptorHandle, 
-		pfClearColor, 0, NULL);//->사각형??
-	//원하는 색상으로 렌터 타켓을 지운다.
-
-	D3D12_CPU_DESCRIPTOR_HANDLE d3dDsvCPUDescriptorHandle =
-		m_pd3dDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	//깊이-스텐실 서술자의 CPU 시작 주소를 받아준다.
+		m_pd3dRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	d3dRtvCPUDescriptorHandle.ptr += (m_nSwapChainBufferIndex *
+		m_nRtvDescriptorIncrementSize);
+	//현재의 렌더 타겟에 해당하는 서술자의 CPU 주소(핸들)를 계산한다. 
+	D3D12_CPU_DESCRIPTOR_HANDLE d3dDsvCPUDescriptorHandle = m_pd3dDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	m_pd3dCommandList->OMSetRenderTargets(1, &d3dRtvCPUDescriptorHandle, FALSE, &d3dDsvCPUDescriptorHandle);
+	//뷰포트와 씨저 사각형을 설정한다. 
+	float pfClearColor[4] = { 1.0f, 0.125f, 0.3f, 1.0f };
+	m_pd3dCommandList->ClearRenderTargetView(d3dRtvCPUDescriptorHandle,
+		pfClearColor/*Colors::Azure*/, 0, NULL);
+	//원하는 색상으로 렌더 타겟(뷰)을 지운다.
+	//깊이-스텐실 서술자의 CPU 주소를 계산한다.
 	m_pd3dCommandList->ClearDepthStencilView(d3dDsvCPUDescriptorHandle,
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
-	//원하는 값으로 깊이-스텐실(뷰)를 초기화 해준다.
-
-	m_pd3dCommandList->OMSetRenderTargets(1, &d3dRtvCPUDescriptorHandle, TRUE,
-		&d3dDsvCPUDescriptorHandle);
-	//렌더 타켓 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력 -병합 단계(OM)에 연결한다.
-
-	//렌더링 코드는 여기에 추가될것이다.
-
+	//원하는 값으로 깊이-스텐실(뷰)을 지운다.
+	//m_pd3dCommandList->OMSetRenderTargets(1, &d3dRtvCPUDescriptorHandle, TRUE, 
+	//&d3dDsvCPUDescriptorHandle);
+	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. //렌더링 코드는 여기에 추가될 것이다.
+	if (m_pScene) m_pScene->Render(m_pd3dCommandList);
 	d3dResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	d3dResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	d3dResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	m_pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);
 	/*현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다. GPU가 렌더 타겟(버퍼)을 더 이상 사용하지 않으면 렌더 타겟
-의 상태는 프리젠트 상태(D3D12_RESOURCE_STATE_PRESENT)로 바뀔 것이다.*/
-
+	의 상태는 프리젠트 상태(D3D12_RESOURCE_STATE_PRESENT)로 바뀔 것이다.*/
 	hResult = m_pd3dCommandList->Close();
-	//명령 리스트를 닫힌 상태로 만든다.
-
+	//명령 리스트를 닫힌 상태로 만든다. 
 	ID3D12CommandList* ppd3dCommandLists[] = { m_pd3dCommandList };
-	m_pd3dCommandQueue->ExecuteCommandLists(1, ppd3dCommandLists);
-	//명령 리스트를 명령 큐에 추가하여 실행한다.
-
+	m_pd3dCommandQueue->ExecuteCommandLists(_countof(ppd3dCommandLists), ppd3dCommandLists);
+	//명령 리스트를 명령 큐에 추가하여 실행한다. 
 	WaitForGpuComplete();
-	///GPU가 모든 명령 리스트를 실행할 때 까지 기다린다.
-	DXGI_PRESENT_PARAMETERS dxgiPresentParameters;//운영 체제가 프레젠테이션을 최적화하는 데 도움이 되는 현재에 대한 정보를 설명합니다.
-	dxgiPresentParameters.DirtyRectsCount = 0;//제공된 프레임의 백 버퍼에서 업데이트하는 업데이트된 사각형의 수입니다. 운영 체제는 이 정보를 사용하여 프레젠테이션을 최적화합니다
-	dxgiPresentParameters.pDirtyRects = NULL;//제공된 프레임의 백 버퍼에서 업데이트하는 업데이트된 사각형 목록입니다.
-	dxgiPresentParameters.pScrollRect = NULL;// 스크롤된 사각형에 대한 포인터입니다
-	dxgiPresentParameters.pScrollOffset = NULL;//원본 사각형(이전 프레임)에서 대상 사각형(현재 프레임)으로 이동하는 스크롤된 영역의 오프셋에 대한 포인터입니다. 
-	//m_pdxgiSwapChain->Present(0, 0);
-	m_pdxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);//디스플레이 화면에 프레임을 표시합니다.
-	/*스왑체인을 프리젠트한다. 프리젠트를 하면 현재 렌더 타겟(후면버퍼)의 내용이 전면버퍼로 옮겨지고 렌더 타겟 인
-덱스가 바뀔 것이다.*/
+	//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다.
+	/*DXGI_PRESENT_PARAMETERS dxgiPresentParameters;
+	dxgiPresentParameters.DirtyRectsCount = 0;
+	dxgiPresentParameters.pDirtyRects = NULL;
+	dxgiPresentParameters.pScrollRect = NULL;
+	dxgiPresentParameters.pScrollOffset = NULL;
+	m_pdxgiSwapChain->Present(0, 0);*/
+	m_pdxgiSwapChain->Present(0, 0);
 
-	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();//->스왑 체인의 현재 백 버퍼의 인덱스를 가져와서 인덱스에 저장
+	MoveToNextFrame();
+
+	/*스왑체인을 프리젠트한다. 프리젠트를 하면 현재 렌더 타겟(후면버퍼)의 내용이 전면버퍼로 옮겨지고 렌더 타겟 인
+	덱스가 바뀔 것이다.*/
+	//m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();
 	m_GameTimer.GetFrameRate(m_pszFrameRate + 12, 37);
 	::SetWindowText(m_hwnd, m_pszFrameRate);
 }
