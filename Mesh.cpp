@@ -42,7 +42,7 @@ Alpha) 4개의 파라메터를 사용하여 색상을 표현한다. 각 파라메터는 0.0~1.0 사이의 �
 		1.0f));
 	pVertices[1] = CDiffusedVertex(XMFLOAT3(0.5f, -0.5f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f,
 		1.0f));
-	pVertices[2] = CDiffusedVertex(XMFLOAT3(-0.5f, 0.5f, 0.0f), XMFLOAT4((Colors::Blue)))                                                                                           ;
+	pVertices[2] = CDiffusedVertex(XMFLOAT3(-0.5f, -0.5f, 0.0f), XMFLOAT4((Colors::Blue)))                                                                                           ;
 
 	//삼각형 메쉬를 리소스(정점 버퍼)로 생성한다.
 
@@ -52,5 +52,5 @@ Alpha) 4개의 파라메터를 사용하여 색상을 표현한다. 각 파라메터는 0.0~1.0 사이의 �
 	//정점 버펴 뷰를 생성한다.
 	m_d3dVertexBufferView.BufferLocation = m_pd3dVertexBuffer->GetGPUVirtualAddress();
 	m_d3dVertexBufferView.StrideInBytes = m_nStride;
-	m_d3dVertexBufferView.SizeInBytes = m_nStride & m_nVertices;
+	m_d3dVertexBufferView.SizeInBytes = m_nStride * m_nVertices;
 }
