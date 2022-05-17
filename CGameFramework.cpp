@@ -53,6 +53,8 @@ bool CGameFramework::onCreate(HINSTANCE hinstance, HWND hmainwnd)
 	CreateRtvAndDsvDescriptorHeaps();
 	CreateRenderTargetViews();
 	CreateDepthStencilView();
+	
+	
 
 	BuildObjects();
 	//랜더링할 게임 객체를 생성한다.
@@ -134,64 +136,61 @@ void CGameFramework::CreateSwapChain()
 	m_nWndClientWidth = rcClient.right - rcClient.left;//가로 길이
 	m_nWndClientHeight = rcClient.bottom - rcClient.top;//세로 길이
 
-	DXGI_SWAP_CHAIN_DESC1 dxgiSwapChainDesc;
-	::ZeroMemory(&dxgiSwapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC1));
-	dxgiSwapChainDesc.Width = m_nWndClientWidth; //해상도 너비를 설명하는 값입니다
-	dxgiSwapChainDesc.Height = m_nWndClientHeight;//해상도 높이를 설명하는 값
-	dxgiSwapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//디스플레이 형식을 설명하는 DXGI_FORMAT 구조입니다.
-	dxgiSwapChainDesc.SampleDesc.Count=(m_bMsaa4xEnable)?4:1;//픽셀당 멀티 셈플 개수입니다.
-	dxgiSwapChainDesc.SampleDesc.Quality = (m_bMsaa4xEnable) ? (m_nMsaa4xQualityLevels - 1) : 0;
-	dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//후면 버퍼에 대한 표면 사용량 및 CPU엑세스 옵션을 설명하는 DXGI_USAGE형식값
-	dxgiSwapChainDesc.BufferCount = m_nSwapChainBuffers;//스왑 체인의 버퍼수를 설명하는 값,전체 화면 스왑 체인을 만들 때 일반적으로 이값에 전면 버퍼를 포함
-	dxgiSwapChainDesc.Scaling = DXGI_SCALING_NONE;//후면 버퍼의 크기가 대상 출려과 같지 않을 경우 크기 조절 DXGI_SCALING 형식의 값.
-	dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;//스왑 체인에서 사용되는 프레젠테이션 모델과 표면을 제시한 후 프레젠테이션 버퍼의 내용을 처리하는 옵션을 설명하는 DXGI_SWAP_EFFECT 형식의 값입니다.
-	dxgiSwapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED; //스왑 체인 후면 버퍼의 투명도 동작을 식별하는 DXGI_ALPHA_MODE 형식값입니다.
-	dxgiSwapChainDesc.Flags = 0;//비트 방향 또는 작업을 사용하여 결합된 DXGI_SWAP_CHAIN_FLAG 형식값의 조합입니다. 결과 값은 스왑 체인 동작에 대한 옵션을 지정합니다.
+	//DXGI_SWAP_CHAIN_DESC1 dxgiSwapChainDesc;
+	//::ZeroMemory(&dxgiSwapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC1));
+	//dxgiSwapChainDesc.Width = m_nWndClientWidth; //해상도 너비를 설명하는 값입니다
+	//dxgiSwapChainDesc.Height = m_nWndClientHeight;//해상도 높이를 설명하는 값
+	//dxgiSwapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//디스플레이 형식을 설명하는 DXGI_FORMAT 구조입니다.
+	//dxgiSwapChainDesc.SampleDesc.Count=(m_bMsaa4xEnable)?4:1;//픽셀당 멀티 셈플 개수입니다.
+	//dxgiSwapChainDesc.SampleDesc.Quality = (m_bMsaa4xEnable) ? (m_nMsaa4xQualityLevels - 1) : 0;
+	//dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//후면 버퍼에 대한 표면 사용량 및 CPU엑세스 옵션을 설명하는 DXGI_USAGE형식값
+	//dxgiSwapChainDesc.BufferCount = m_nSwapChainBuffers;//스왑 체인의 버퍼수를 설명하는 값,전체 화면 스왑 체인을 만들 때 일반적으로 이값에 전면 버퍼를 포함
+	//dxgiSwapChainDesc.Scaling = DXGI_SCALING_NONE;//후면 버퍼의 크기가 대상 출려과 같지 않을 경우 크기 조절 DXGI_SCALING 형식의 값.
+	//dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;//스왑 체인에서 사용되는 프레젠테이션 모델과 표면을 제시한 후 프레젠테이션 버퍼의 내용을 처리하는 옵션을 설명하는 DXGI_SWAP_EFFECT 형식의 값입니다.
+	//dxgiSwapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED; //스왑 체인 후면 버퍼의 투명도 동작을 식별하는 DXGI_ALPHA_MODE 형식값입니다.
+	//dxgiSwapChainDesc.Flags = 0;//비트 방향 또는 작업을 사용하여 결합된 DXGI_SWAP_CHAIN_FLAG 형식값의 조합입니다. 결과 값은 스왑 체인 동작에 대한 옵션을 지정합니다.
 
-	//스왑체인의 전체 화면 모드를 설명한다.
+	////스왑체인의 전체 화면 모드를 설명한다.
 
-	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiSwapChainFullScreenDesc;
-	::ZeroMemory(&dxgiSwapChainFullScreenDesc, sizeof(DXGI_SWAP_CHAIN_FULLSCREEN_DESC));
-	dxgiSwapChainFullScreenDesc.RefreshRate.Numerator = 60;//새로고침 빈도 60분자
-	dxgiSwapChainFullScreenDesc.RefreshRate.Denominator = 1;//새로고침 빈도 1분자
-	dxgiSwapChainFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//스캔 선 그리기 모드를 설명하는 DXGI_MODE_SCANLINE_ORDER  STRUCT 형식의 멤버입니다.
-	dxgiSwapChainFullScreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;//배율 조정 모드를 설명하는  DXGI_MODE_SCALING 확대된 형식의 멤버입니다
-	dxgiSwapChainFullScreenDesc.Windowed = TRUE; //스왑 체인이 창 모드에 있는지 여부를 지정하는 Boole 값입니다.스왑 체인이 창 모드에 있는 경우 TRUE; 그렇지 않으면 FALSE.
+	//DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiSwapChainFullScreenDesc;
+	//::ZeroMemory(&dxgiSwapChainFullScreenDesc, sizeof(DXGI_SWAP_CHAIN_FULLSCREEN_DESC));
+	//dxgiSwapChainFullScreenDesc.RefreshRate.Numerator = 60;//새로고침 빈도 60분자
+	//dxgiSwapChainFullScreenDesc.RefreshRate.Denominator = 1;//새로고침 빈도 1분자
+	//dxgiSwapChainFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//스캔 선 그리기 모드를 설명하는 DXGI_MODE_SCANLINE_ORDER  STRUCT 형식의 멤버입니다.
+	//dxgiSwapChainFullScreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;//배율 조정 모드를 설명하는  DXGI_MODE_SCALING 확대된 형식의 멤버입니다
+	//dxgiSwapChainFullScreenDesc.Windowed = TRUE; //스왑 체인이 창 모드에 있는지 여부를 지정하는 Boole 값입니다.스왑 체인이 창 모드에 있는 경우 TRUE; 그렇지 않으면 FALSE.
 
-	m_pdxgiFactory->CreateSwapChainForHwnd(m_pd3dCommandQueue, m_hwnd,
-		&dxgiSwapChainDesc, &dxgiSwapChainFullScreenDesc, NULL, (IDXGISwapChain1**)&m_pdxgiSwapChain);//HWND 핸들과 연결된 스왑 체인을 스왑 체인의 출력 창에 만듭니다.
-	//스왑체인을 생성한다.(in,in,in,in,in,out)->t순서대로 &m_pdxgiSwapChain로 출력한다.,
+	//m_pdxgiFactory->CreateSwapChainForHwnd(m_pd3dCommandQueue, m_hwnd,
+	//	&dxgiSwapChainDesc, &dxgiSwapChainFullScreenDesc, NULL, (IDXGISwapChain1**)&m_pdxgiSwapChain);//HWND 핸들과 연결된 스왑 체인을 스왑 체인의 출력 창에 만듭니다.
+	////스왑체인을 생성한다.(in,in,in,in,in,out)->t순서대로 &m_pdxgiSwapChain로 출력한다.,
 
-	m_pdxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
+	//m_pdxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
 
-	//ALT+ENTER 키의 동작을 비활성화 한다.
+	////ALT+ENTER 키의 동작을 비활성화 한다.
 
-	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();//->가장 중요할듯??
+	//m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();//->가장 중요할듯??
 
 
-	//스왑체인의 현재 후면버퍼 인덱스를 저장한다.
-	//DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
-	//::ZeroMemory(&dxgiSwapChainDesc, sizeof(dxgiSwapChainDesc));
-	//dxgiSwapChainDesc.BufferCount = m_nSwapChainBuffers;
-	//dxgiSwapChainDesc.BufferDesc.Width = m_nWndClientHeight;
-	//dxgiSwapChainDesc.BufferDesc.Height = m_nWndClientHeight;
-	//dxgiSwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	//dxgiSwapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
-	//dxgiSwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	//dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	//dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	//dxgiSwapChainDesc.OutputWindow = m_hwnd;
-	//dxgiSwapChainDesc.SampleDesc.Count = (m_bMsaa4xEnable) ? 4 : 1;
-	//dxgiSwapChainDesc.SampleDesc.Quality = (m_bMsaa4xEnable) ? (m_nMsaa4xQualityLevels -
-	//	1) : 0;
-	//dxgiSwapChainDesc.Windowed = TRUE;
-	////전체화면 모드에서 바탕화면의 해상도를 스왑체인(후면버퍼)의 크기에 맞게 변경한다
-	//dxgiSwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-//	HRESULT hResult = m_pdxgiFactory->CreateSwapChain(m_pd3dCommandQueue,
-//		&dxgiSwapChainDesc, (IDXGISwapChain**)&m_pdxgiSwapChain);
-//	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();
-//	hResult = m_pdxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
+	DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
+	::ZeroMemory(&dxgiSwapChainDesc, sizeof(dxgiSwapChainDesc));
+	dxgiSwapChainDesc.BufferCount = m_nSwapChainBuffers;
+	dxgiSwapChainDesc.BufferDesc.Width = m_nWndClientWidth;
+	dxgiSwapChainDesc.BufferDesc.Height = m_nWndClientHeight;
+	dxgiSwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	dxgiSwapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+	dxgiSwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	dxgiSwapChainDesc.OutputWindow = m_hwnd;
+	dxgiSwapChainDesc.SampleDesc.Count = (m_bMsaa4xEnable) ? 4 : 1;
+	dxgiSwapChainDesc.SampleDesc.Quality = (m_bMsaa4xEnable) ? (m_nMsaa4xQualityLevels -
+		1) : 0;
+	dxgiSwapChainDesc.Windowed = TRUE;
+	//전체화면 모드에서 바탕화면의 해상도를 스왑체인(후면버퍼)의 크기에 맞게 변경한다. dxgiSwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	HRESULT hResult = m_pdxgiFactory->CreateSwapChain(m_pd3dCommandQueue,
+		&dxgiSwapChainDesc, (IDXGISwapChain**)&m_pdxgiSwapChain);
+	m_nSwapChainBufferIndex = m_pdxgiSwapChain->GetCurrentBackBufferIndex();
+	hResult = m_pdxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
 //#ifndef _WITH_SWAPCHAIN_FULLSCREEN_STATE
 //	CreateRenderTargetViews();
 //#endif
@@ -381,8 +380,21 @@ void CGameFramework::CreateDepthStencilView()//깊이 스텐실 뷰를 만든다.
 
 void CGameFramework::BuildObjects()
 {
+	m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
+
+	//씬 객체를 생성하고 씬에 포함될 게임 객체들을 생성한다.
 	m_pScene = new CScene();
-	if (m_pScene) m_pScene->BuildObjects(m_pd3dDevice);
+	m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
+	//씬 객체를 생성하기 위하여 필요한 그래픽 명령 리스트들을 명령 큐에 추가한다.
+	m_pd3dCommandList->Close();
+	ID3D12CommandList* ppd3dCommandLists[] = { m_pd3dCommandList };
+	m_pd3dCommandQueue->ExecuteCommandLists(1, ppd3dCommandLists);
+
+	//그래픽 명령 리스트들이 모두 실행 될 때까지 기다린다.
+	WaitForGpuComplete();
+
+	//그래픽 리소스들을 생성하는 과정에 생성된 업로드 버퍼들을 소멸시킨다.
+	if (m_pScene)m_pScene->ReleaseUploadBuffers();
 
 	m_GameTimer.Reset();
 }
@@ -547,6 +559,7 @@ void CGameFramework::FrameAdvance()
 	//&d3dDsvCPUDescriptorHandle);
 	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. //렌더링 코드는 여기에 추가될 것이다.
 	if (m_pScene) m_pScene->Render(m_pd3dCommandList);
+	//m_pScene->CreateGraphicsPipelineState(m_pd3dDevice);
 	d3dResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	d3dResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	d3dResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
