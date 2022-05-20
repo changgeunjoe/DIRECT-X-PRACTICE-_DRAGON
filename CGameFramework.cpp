@@ -258,16 +258,16 @@ void CGameFramework::CreateDirect3DDevice()
 	/*펜스와 동기화를 위한 이벤트 객체를 생성하다(이벤트 객체의 초기값을 FALSE이다).
 	이벤트가 실행되면(Signal)이벤트의 값을 자동적으로 FALSE가 되도록 생성한다.*/
 
-	m_d3dviewport.TopLeftX = 0;
-	m_d3dviewport.TopLeftY = 0;
-	m_d3dviewport.Width = static_cast<float>(m_nWndClientWidth);
-	m_d3dviewport.Height = static_cast<float>(m_nWndClientHeight);
-	m_d3dviewport.MinDepth = 0.0f;
-	m_d3dviewport.MaxDepth = 1.0f;
-	//뷰표트를 주 윈도우의 클라이언트 영역 전체로 설정한다.
+	//m_d3dviewport.TopLeftX = 0;
+	//m_d3dviewport.TopLeftY = 0;
+	//m_d3dviewport.Width = static_cast<float>(m_nWndClientWidth);
+	//m_d3dviewport.Height = static_cast<float>(m_nWndClientHeight);
+	//m_d3dviewport.MinDepth = 0.0f;
+	//m_d3dviewport.MaxDepth = 1.0f;
+	////뷰표트를 주 윈도우의 클라이언트 영역 전체로 설정한다.
 
-	m_d3dScissorRect = { 0,0,m_nWndClientWidth,m_nWndClientHeight };
-	//씨저 사각형을 주 윈도우의 클라이언트 영역 전체로 설정한다.
+	//m_d3dScissorRect = { 0,0,m_nWndClientWidth,m_nWndClientHeight };
+	////씨저 사각형을 주 윈도우의 클라이언트 영역 전체로 설정한다.
 
 	if (pd3dAdapter)pd3dAdapter->Release();
 }
@@ -381,7 +381,14 @@ void CGameFramework::CreateDepthStencilView()//깊이 스텐실 뷰를 만든다.
 void CGameFramework::BuildObjects()
 {
 	m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
-
+	//카메라 객체를 생성하여 뷰표트,씨저 사각형,투영 변환 행렬,카메라 변환 행렬을 생성하고 설정한다.
+	m_pCamera = new CCamera();
+	m_pCamera->SetViewport(0, 0, m_nWndClientWidth, m_nWndClientHeight, 0.0f, 1.0f);
+	m_pCamera->SetScissorRect(0, 0, m_nWndClientHeight, m_nWndClientHeight);
+	m_pCamera->GenerateProjectionMatrix(1.0f, 500.0f, float(m_nWndClientWidth) /
+		float(m_nWndClientHeight), 90.0f);
+	m_pCamera->GenerateViewMatrix(XMFLOAT3(0.0f, 0.0f, -2.0f), XMFLOAT3(0.0f, 0.0f, 0.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f));
 	//씬 객체를 생성하고 씬에 포함될 게임 객체들을 생성한다.
 	m_pScene = new CScene();
 	m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
@@ -521,10 +528,6 @@ void CGameFramework::FrameAdvance()
 	hResult = m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
 	//명령 할당자와 명령 리스트를 리셋한다.
 
-	m_pd3dCommandList->RSSetViewports(1, &m_d3dviewport);
-	m_pd3dCommandList->RSSetScissorRects(1, &m_d3dScissorRect);
-
-
 	D3D12_RESOURCE_BARRIER d3dResourceBarrier;
 	::ZeroMemory(&d3dResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
 	d3dResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -558,7 +561,7 @@ void CGameFramework::FrameAdvance()
 	//m_pd3dCommandList->OMSetRenderTargets(1, &d3dRtvCPUDescriptorHandle, TRUE, 
 	//&d3dDsvCPUDescriptorHandle);
 	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. //렌더링 코드는 여기에 추가될 것이다.
-	if (m_pScene) m_pScene->Render(m_pd3dCommandList);
+	if (m_pScene) m_pScene->Render(m_pd3dCommandList,m_pCamera);
 	//m_pScene->CreateGraphicsPipelineState(m_pd3dDevice);
 	d3dResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	d3dResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;

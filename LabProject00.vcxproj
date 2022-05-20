@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="CGameFramework.h" />
     <ClInclude Include="CGameObject.h" />
     <ClInclude Include="Mesh.h" />
@@ -151,6 +152,7 @@
     <ClInclude Include="Timer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CGameFramework.cpp" />
     <ClCompile Include="CGameObject.cpp" />
     <ClCompile Include="LabProject00.cpp" />

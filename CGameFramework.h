@@ -2,6 +2,7 @@
 #include"stdafx.h"
 #include"Timer.h"
 #include"Scene.h"
+#include"Camera.h"
 class CGameFramework
 {
 
@@ -54,10 +55,8 @@ private:
 	//펜스 인터페이스 포인터,펜스의 값,이벤트 핸들이다.
 
 	CScene *m_pScene;
-
-	D3D12_VIEWPORT m_d3dviewport;
-	D3D12_RECT m_d3dScissorRect;
-	//뷰표트와 씨저 사각형이다.
+	
+	CCamera* m_pCamera = NULL;
 
 	//다음은 게임 프레임 워크에서 사용할 타이머이다.
 	CGameTimer m_GameTimer;
