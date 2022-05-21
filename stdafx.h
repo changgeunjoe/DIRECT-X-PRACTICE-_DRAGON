@@ -79,7 +79,13 @@ namespace Vector3
 			+ XMLoadFloat3(&xmf3Vector2));
 		return(xmf3Result);
 	}
-
+	inline XMFLOAT3 Add(XMFLOAT3& xmf3Vector1, XMFLOAT3& xmf3Vector2, float fScalar)
+	{
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMLoadFloat3(&xmf3Vector1) + (XMLoadFloat3(&xmf3Vector2)
+			* fScalar));
+		return(xmf3Result);
+	}
 	inline XMFLOAT3 Subtract(XMFLOAT3& xmf3Vector1, XMFLOAT3& xmf3Vector2)
 	{
 		XMFLOAT3 xmf3Result;
@@ -107,7 +113,7 @@ namespace Vector3
 				XMLoadFloat3(&xmf3Vector2)));
 		return(xmf3Result);
 	}
-	inline XMFLOAT3 Normalize(XMFLOAT3& xmf3Vector)//단위벡터 만드는 것 (단어가 생각이 안남 ㅋㅋ)
+	inline XMFLOAT3 Normalize(const XMFLOAT3& xmf3Vector)//단위벡터 만드는 것 (단어가 생각이 안남 ㅋㅋ)
 	{
 		XMFLOAT3 m_xmf3Normal;
 		XMStoreFloat3(&m_xmf3Normal, XMVector3Normalize(XMLoadFloat3(&xmf3Vector)));
