@@ -3,9 +3,15 @@
 #include"Timer.h"
 #include"Scene.h"
 #include"Camera.h"
+#include "Player.h"
 class CGameFramework
 {
-
+#include "Player.h"
+public:
+	//플레이어 객체에 대한 포인터이다.
+	CPlayer* m_pPlayer = NULL;
+	//마지막으로 마우스 버튼을 클릭할 때의 마우스 커서의 위치이다. 
+	POINT m_ptOldCursorPos; 
 private:
 	HINSTANCE m_hinstance;//우리가 만들 exe를 나타내주는 변수이다.
 	HWND m_hwnd;
