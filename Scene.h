@@ -34,8 +34,11 @@ public:
 	protected:
 	//배치(Batch) 처리를 하기 위하여 씬을 셰이더들의 리스트로 표현한다. 
 	CObjectsShader *m_pShaders = NULL;
+	CHeightMapTerrain* m_pTerrain = NULL;
 	int m_nShaders = 0;
 	ID3D12RootSignature* m_pd3dGraphicsRootSignature = NULL;
+public:
+	CHeightMapTerrain* GetTerrain() { return(m_pTerrain); }
 
 
 	////루트 시그너쳐를 나타내는 인터페이스 포인터이다. 

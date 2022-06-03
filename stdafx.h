@@ -54,9 +54,21 @@ extern ID3D12Resource* CreateBufferResource(ID3D12Device* pd3dDevice,
 
 #define FRAME_BUFFER_WIDTH 800
 #define FRAME_BUFFER_HEIGHT 600
-
+#define EPSILON 1.0e-10f
+inline bool IsZero(float fValue) { return((fabsf(fValue) < EPSILON)); }
+inline bool IsEqual(float fA, float fB) { return(::IsZero(fA - fB)); }
+inline float InverseSqrt(float fValue) { return 1.0f / sqrtf(fValue); }
+inline void Swap(float* pfS, float* pfT) { float fTemp = *pfS; *pfS = *pfT; *pfT = fTemp; }
 namespace Vector3 
 {
+	
+	//3-차원 벡터가 영벡터인 가를 반환하는 함수이다.
+	inline bool IsZero(XMFLOAT3& xmf3Vector)
+	{
+		if (::IsZero(xmf3Vector.x) && ::IsZero(xmf3Vector.y) && ::IsZero(xmf3Vector.z))
+			return(true);
+		return(false);
+	}
 	inline XMFLOAT3 XMVectorToFloat3(XMVECTOR& xmvVector)
 	{
 		XMFLOAT3 xmf3Result;
@@ -93,14 +105,14 @@ namespace Vector3
 			XMLoadFloat3(&xmf3Vector2));
 		return(xmf3Result);
 	}
-	inline float DotProduct(XMFLOAT3& xmf3Vector1, XMFLOAT3& xmf3Vector2)//내적 계산
+	inline float DotProduct(XMFLOAT3 xmf3Vector1, XMFLOAT3& xmf3Vector2)//내적 계산
 	{
 		XMFLOAT3 xmf3Result;
 		XMStoreFloat3(&xmf3Result, XMVector3Dot(XMLoadFloat3(&xmf3Vector1),
 			XMLoadFloat3(&xmf3Vector2)));
 		return(xmf3Result.x);
 	}
-	inline XMFLOAT3 CrossProduct(XMFLOAT3& xmf3Vector1, XMFLOAT3& xmf3Vector2,//외적 
+	inline XMFLOAT3 CrossProduct(XMFLOAT3 xmf3Vector1, XMFLOAT3& xmf3Vector2,//외적 
 		bool bNormalize = true)
 	{
 		XMFLOAT3 xmf3Result;
@@ -159,7 +171,14 @@ namespace Vector3
 }
 namespace Vector4
 {
-	inline XMFLOAT4 Add(XMFLOAT4& xmf4Vector1, XMFLOAT4 xmf4Vector2)
+	//4-차원 벡터와 스칼라(실수)의 곱을 반환하는 함수이다. 
+	inline XMFLOAT4 Multiply(float fScalar, XMFLOAT4& xmf4Vector)
+	{
+		XMFLOAT4 xmf4Result;
+		XMStoreFloat4(&xmf4Result, fScalar * XMLoadFloat4(&xmf4Vector));
+		return(xmf4Result);
+	}
+	inline XMFLOAT4 Add(XMFLOAT4 xmf4Vector1, XMFLOAT4 xmf4Vector2)
 	{
 		XMFLOAT4 xmf4Result;
 		XMStoreFloat4(&xmf4Result, XMLoadFloat4(&xmf4Vector1) +
@@ -171,12 +190,6 @@ namespace Vector4
 		XMFLOAT4 xmf4Result;
 		XMStoreFloat4(&xmf4Result, XMLoadFloat4(&xmf4Vector1) *
 			XMLoadFloat4(&xmf4Vector2));
-		return(xmf4Result);
-	}
-	inline XMFLOAT4 Multiply(float fScalar, XMFLOAT4& xmf4Vector)
-	{
-		XMFLOAT4 xmf4Result;
-		XMStoreFloat4(&xmf4Result, fScalar * XMLoadFloat4(&xmf4Vector));
 		return(xmf4Result);
 	}
 }
